@@ -13,8 +13,16 @@ export default async function handler(request, response) {
   }
 
   const { SUPABASE_URL, SUPABASE_SECRET_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL, DONATION_NOTIFICATION_EMAIL } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !RESEND_API_KEY || !RESEND_FROM_EMAIL || !DONATION_NOTIFICATION_EMAIL) {
-    return response.status(503).json({ error: 'El formulario está en configuración. Inténtalo nuevamente más tarde.' });
+  const requiredSettings = { SUPABASE_URL, SUPABASE_SECRET_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL, DONATION_NOTIFICATION_EMAIL };
+  const missingSettings = Object.entries(requiredSettings)
+    .filter(([, value]) => !value || !value.trim())
+    .map(([key]) => key);
+
+  if (missingSettings.length) {
+    console.error('Missing donation configuration:', missingSettings.join(', '));
+    return response.status(503).json({
+      error: `El formulario está en configuración. Falta: ${missingSettings.join(', ')}.`
+    });
   }
 
   const database = await fetch(`${SUPABASE_URL}/rest/v1/donation_requests`, {
